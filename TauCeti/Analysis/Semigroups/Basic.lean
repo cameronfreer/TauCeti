@@ -95,6 +95,15 @@ theorem map_add_apply (S : StronglyContinuousSemigroup X) (s t : ℝ≥0) (x : X
   rfl
 
 omit [CompleteSpace X] in
+/-- **The increment of a semigroup over `[a, b]` factors through its value at `a`.** -/
+theorem sub_eq_comp_sub_one_of_le (S : StronglyContinuousSemigroup X) {a b : ℝ≥0} (hab : a ≤ b) :
+    S b - S a = (S a).comp (S (b - a) - 1) := by
+  have hmap := S.map_add a (b - a)
+  rw [add_tsub_cancel_of_le hab] at hmap
+  rw [hmap, ContinuousLinearMap.comp_sub, ContinuousLinearMap.one_def,
+    ContinuousLinearMap.comp_id]
+
+omit [CompleteSpace X] in
 /-- Submultiplicativity of the native nonnegative-time operator norm. -/
 theorem norm_map_add_le (S : StronglyContinuousSemigroup X) (s t : ℝ≥0) :
     ‖S (s + t)‖ ≤ ‖S s‖ * ‖S t‖ := by
@@ -117,6 +126,15 @@ omit [CompleteSpace X] in
 /-- The semigroup as a function of real time, extended by `id` for `t < 0`. -/
 noncomputable def realOperator (S : StronglyContinuousSemigroup X) (t : ℝ) : X →L[ℝ] X :=
   S t.toNNReal
+
+omit [CompleteSpace X] in
+/-- The real-time operator is the native semigroup operator at the nonnegative part of `t`.
+
+This is not a `simp` lemma: the simp normal form keeps `realOperator` folded, so that the more
+specific lemmas `realOperator_coe`, `realOperator_zero` and `realOperator_derivWithin_zero` fire. -/
+theorem realOperator_def (S : StronglyContinuousSemigroup X) (t : ℝ) :
+    S.realOperator t = S t.toNNReal := by
+  rw [realOperator]
 
 omit [CompleteSpace X] in
 @[simp]
