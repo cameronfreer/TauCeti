@@ -19,16 +19,16 @@ the corresponding directing-measure evaluations:
 ∫ |∏ i, blockAverage 𝟙_{B i} (window (n+1) i) - ∏ i, (directingMeasure ω).real (B i)| dμ → 0.
 ```
 
-The windows are `window N i j = (i + 1) * N + j` at `N = n + 1`, so factor `i` occupies the indices
-`[(i+1)(n+1), (i+2)(n+1))`. Distinct factors never collide, and the windows move outward as the
-length grows — which is exactly what fixed starts cannot do, since windows from distinct fixed
-starts overlap once the common length exceeds the gap between the starts.
+The selections are `disjointWindow i`, so factor `i` occupies `[(i+1)(n+1), (i+2)(n+1))`. Distinct
+factors never collide (`disjointWindow_ne`), and the windows move outward as the length grows —
+which is exactly what fixed starts cannot do, since windows from distinct fixed starts overlap once
+the common length exceeds the gap between the starts.
 
 Two ingredients meet here.
 
 *Each factor converges.* The indicator-to-directing-measure convergence in
 `ViaL2/EmpiricalToDirecting.lean` accepts any eventually-injective moving selection, and
-`j ↦ window (n+1) i j` is injective at every length. The limit does not depend on the selection,
+`disjointWindow i` is injective at every length. The limit does not depend on the selection,
 so all `m` factors converge to their directing-measure evaluations against the *same* directing
 measure.
 
@@ -54,13 +54,6 @@ namespace Probability
 
 variable {Ω α : Type*} [MeasurableSpace Ω] [MeasurableSpace α]
 
-/-- The selection reading window `i` at length `n + 1` is injective. -/
-theorem injective_window_selection (i n : ℕ) :
-    Function.Injective fun j : Fin (n + 1) => window (n + 1) i (j : ℕ) := by
-  intro a b hab
-  simp only [window_def] at hab
-  exact Fin.ext (Nat.add_left_cancel hab)
-
 /-- **Simultaneous disjoint-window convergence.** For a contractable process on a standard Borel
 state space and finitely many measurable sets `B i`, the product of the block averages of the
 indicators over the pairwise disjoint windows `window (n + 1) i` converges in `L¹` to the product
@@ -71,12 +64,12 @@ theorem Contractable.tendsto_integral_abs_prod_blockAverage_window_sub_prod_dire
     {m : ℕ} (B : Fin m → Set α) (hB : ∀ i, MeasurableSet (B i)) :
     Tendsto (fun n => ∫ ω,
         |(∏ i : Fin m, blockAverage (fun c ω => (B i).indicator (fun _ => (1 : ℝ)) (X c ω))
-            (fun j : Fin (n + 1) => window (n + 1) (i : ℕ) (j : ℕ)) ω)
+            (disjointWindow (i : ℕ) n) ω)
           - ∏ i : Fin m, (directingMeasure μ X ω).real (B i)| ∂μ) atTop (𝓝 0) := by
   classical
   set F : Fin m → ℕ → Ω → ℝ := fun i n =>
     blockAverage (fun c ω => (B i).indicator (fun _ => (1 : ℝ)) (X c ω))
-      fun j : Fin (n + 1) => window (n + 1) (i : ℕ) (j : ℕ) with hF
+      (disjointWindow (i : ℕ) n) with hF
   set g : Fin m → Ω → ℝ := fun i ω => (directingMeasure μ X ω).real (B i) with hg
   have hind : ∀ i c, Measurable fun ω => (B i).indicator (fun _ => (1 : ℝ)) (X c ω) := fun i c =>
     (measurable_const.indicator (hB i)).comp (hX_meas c)
@@ -86,12 +79,12 @@ theorem Contractable.tendsto_integral_abs_prod_blockAverage_window_sub_prod_dire
     by_cases h : X c ω ∈ B i <;> simp [Set.indicator_of_mem, Set.indicator_of_notMem, h]
   have hFapp : ∀ i n ω, F i n ω
       = (((n + 1 : ℕ) : ℝ))⁻¹ * ∑ j : Fin (n + 1),
-          (B i).indicator (fun _ => (1 : ℝ)) (X (window (n + 1) (i : ℕ) (j : ℕ)) ω) := by
+          (B i).indicator (fun _ => (1 : ℝ)) (X (disjointWindow (i : ℕ) n j) ω) := by
     intro i n ω; simp only [hF, blockAverage_apply]
   have hF_meas : ∀ i n, Measurable (F i n) := by
     intro i n
     have : F i n = fun ω => (((n + 1 : ℕ) : ℝ))⁻¹ * ∑ j : Fin (n + 1),
-        (B i).indicator (fun _ => (1 : ℝ)) (X (window (n + 1) (i : ℕ) (j : ℕ)) ω) :=
+        (B i).indicator (fun _ => (1 : ℝ)) (X (disjointWindow (i : ℕ) n j) ω) :=
       funext (hFapp i n)
     rw [this]
     exact measurable_const.mul (Finset.measurable_sum _ fun j _ => hind i _)
@@ -103,15 +96,15 @@ theorem Contractable.tendsto_integral_abs_prod_blockAverage_window_sub_prod_dire
       exact mul_nonneg (inv_nonneg.2 hpos.le)
         (Finset.sum_nonneg fun j _ => (hind_mem i _ ω).1)
     have hsum : ∑ j : Fin (n + 1),
-        (B i).indicator (fun _ => (1 : ℝ)) (X (window (n + 1) (i : ℕ) (j : ℕ)) ω)
+        (B i).indicator (fun _ => (1 : ℝ)) (X (disjointWindow (i : ℕ) n j) ω)
           ≤ ((n + 1 : ℕ) : ℝ) := by
       calc ∑ j : Fin (n + 1),
-            (B i).indicator (fun _ => (1 : ℝ)) (X (window (n + 1) (i : ℕ) (j : ℕ)) ω)
+            (B i).indicator (fun _ => (1 : ℝ)) (X (disjointWindow (i : ℕ) n j) ω)
           ≤ ∑ _j : Fin (n + 1), (1 : ℝ) := Finset.sum_le_sum fun j _ => (hind_mem i _ ω).2
         _ = ((n + 1 : ℕ) : ℝ) := by simp
     rw [Real.norm_of_nonneg hnonneg, hFapp]
     calc (((n + 1 : ℕ) : ℝ))⁻¹ * ∑ j : Fin (n + 1),
-          (B i).indicator (fun _ => (1 : ℝ)) (X (window (n + 1) (i : ℕ) (j : ℕ)) ω)
+          (B i).indicator (fun _ => (1 : ℝ)) (X (disjointWindow (i : ℕ) n j) ω)
         ≤ (((n + 1 : ℕ) : ℝ))⁻¹ * ((n + 1 : ℕ) : ℝ) :=
           mul_le_mul_of_nonneg_left hsum (inv_nonneg.2 hpos.le)
       _ = 1 := inv_mul_cancel₀ hpos.ne'
@@ -128,8 +121,7 @@ theorem Contractable.tendsto_integral_abs_prod_blockAverage_window_sub_prod_dire
     intro i _
     simpa only [Real.norm_eq_abs, hF, hg] using
       hX.tendsto_integral_abs_blockAverage_indicator_sub_directingMeasure hX_meas (hB i)
-        (fun n j => window (n + 1) (i : ℕ) (j : ℕ))
-        (Eventually.of_forall fun n => injective_window_selection (i : ℕ) n)
+        (disjointWindow (i : ℕ)) (disjointWindow_eventually_injective (i : ℕ))
   simpa only [Real.norm_eq_abs] using
     TauCeti.MeasureTheory.tendsto_integral_norm_prod_sub_prod
       (s := (Finset.univ : Finset (Fin m))) (F := F) (g := g)
