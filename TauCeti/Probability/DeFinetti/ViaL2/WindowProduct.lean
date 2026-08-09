@@ -56,7 +56,8 @@ variable {Ω α : Type*} [MeasurableSpace Ω] [MeasurableSpace α]
 
 /-- **Simultaneous disjoint-window convergence.** For a contractable process on a standard Borel
 state space and finitely many measurable sets `B i`, the product of the block averages of the
-indicators over the pairwise disjoint windows `window (n + 1) i` converges in `L¹` to the product
+indicators over the pairwise disjoint selections `disjointWindow i` converges in `L¹` to the
+product
 of the directing-measure evaluations. -/
 theorem Contractable.tendsto_integral_abs_prod_blockAverage_window_sub_prod_directingMeasure
     [StandardBorelSpace α] [Nonempty α] {μ : Measure Ω} [IsFiniteMeasure μ] {X : ℕ → Ω → α}
