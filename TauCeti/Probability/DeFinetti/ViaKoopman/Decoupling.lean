@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import TauCeti.Probability.DeFinetti.ViaKoopman.BlockReduction
+public import Mathlib.Dynamics.BirkhoffSum.Average
 
 /-!
 # Displacing the last coordinate of a block
@@ -73,6 +74,22 @@ theorem ContractableLaw.map_restrict_snoc_prefix_eq_prefixProj
           x ((Fin.snoc (fun j : Fin r => (j : ℕ)) (r + m) : Fin (r + 1) → ℕ) i))
       = (ρ.restrict A).map (prefixProj α (r + 1)) :=
   hρ.map_restrict_block_eq_prefixProj_of_measurableSet_invariants (strictMono_snoc_prefix r m) hA
+
+omit [MeasurableSpace α] in
+/-- **The displaced coordinates are a Birkhoff average.** Reading coordinate `r` along the shift
+orbit gives exactly the displaced coordinates `r, r + 1, …`, so the average over displacements is
+`birkhoffAverage` of the single observable `𝟙_B ∘ (· r)`.
+
+This is where the two halves of the argument meet: the left side is what the invariant transport
+controls (each term has the same integral over an invariant event), and the right side is what the
+mean ergodic theorem converges. -/
+theorem birkhoffAverage_shift_coord_eq {B : Set α} (r n : ℕ) (x : ℕ → α) :
+    birkhoffAverage ℝ (shift α) (fun y : ℕ → α => (B.indicator (fun _ => (1 : ℝ)) (y r))) n x
+      = (n : ℝ)⁻¹ * ∑ m ∈ Finset.range n, B.indicator (fun _ => (1 : ℝ)) (x (r + m)) := by
+  rw [birkhoffAverage, birkhoffSum, smul_eq_mul]
+  congr 1
+  refine Finset.sum_congr rfl fun m _ => ?_
+  rw [shift_iterate_apply]
 
 end Probability
 
