@@ -58,6 +58,22 @@ theorem strictMono_snoc_prefix (r m : ℕ) :
   · rw [hj, Fin.snoc_last]
     exact lt_of_lt_of_le i.isLt (Nat.le_add_right r m)
 
+/-- **The displaced block has a law independent of the displacement.** Over an invariant event,
+pushing the restricted law forward along the prefix-plus-`r + m` selection gives the same measure
+for every `m` — namely the pushforward along the plain prefix of length `r + 1`.
+
+This is the `m`-independence the decoupling runs on: because the right-hand side does not mention
+`m`, an average over `m < n` may be inserted on the left without changing anything, and that
+average is a Birkhoff average of the last coordinate under the shift. -/
+theorem ContractableLaw.map_restrict_snoc_prefix_eq_prefixProj
+    {ρ : Measure (ℕ → α)} (hρ : ContractableLaw ρ) (r m : ℕ)
+    {A : Set (ℕ → α)} (hA : MeasurableSet[MeasurableSpace.invariants (shift α)] A) :
+    (ρ.restrict A).map
+        (fun x : ℕ → α => fun i : Fin (r + 1) =>
+          x ((Fin.snoc (fun j : Fin r => (j : ℕ)) (r + m) : Fin (r + 1) → ℕ) i))
+      = (ρ.restrict A).map (prefixProj α (r + 1)) :=
+  hρ.map_restrict_block_eq_prefixProj_of_measurableSet_invariants (strictMono_snoc_prefix r m) hA
+
 end Probability
 
 end TauCeti
