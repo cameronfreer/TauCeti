@@ -6,6 +6,7 @@ module
 
 public import TauCeti.Probability.DeFinetti.ViaKoopman.BlockReduction
 public import Mathlib.Dynamics.BirkhoffSum.Average
+public import TauCeti.Probability.Ergodic.CondExpProjection
 
 /-!
 # Displacing the last coordinate of a block
@@ -113,6 +114,29 @@ theorem ContractableLaw.setIntegral_comp_coord_eq_zero_of_measurableSet_invarian
     rw [← hρ.map_restrict_block_eq_prefixProj_of_measurableSet_invariants hs hA,
       integral_map (hcoord s).aemeasurable hg.aestronglyMeasurable]
   rw [key r (Subsingleton.strictMono _), key 0 (Subsingleton.strictMono _)]
+
+/-- **The Birkhoff averages of a coordinate indicator converge to the invariant conditional
+expectation of the first coordinate.** Combining the mean ergodic bridge with the fact that every
+coordinate agrees with the first: the limit is named at coordinate `0`, which is where the
+invariant conditional law is defined. -/
+theorem ContractableLaw.tendsto_integral_abs_birkhoffAverage_indicator_coord
+    {ρ : Measure (ℕ → α)} [IsProbabilityMeasure ρ] (hρ : ContractableLaw ρ)
+    {B : Set α} (hB : MeasurableSet B) (r : ℕ) :
+    Filter.Tendsto (fun n => ∫ x,
+        |birkhoffAverage ℝ (shift α) (fun y : ℕ → α => B.indicator (fun _ => (1 : ℝ)) (y r)) n x
+          - ρ[fun y : ℕ → α => B.indicator (fun _ => (1 : ℝ)) (y r) |
+              MeasurableSpace.invariants (shift α)] x| ∂ρ)
+      Filter.atTop (nhds 0) := by
+  have hmeas : Measurable fun y : ℕ → α => B.indicator (fun _ => (1 : ℝ)) (y r) :=
+    (measurable_const.indicator hB).comp (measurable_pi_apply r)
+  have hbdd : ∀ y : ℕ → α, ‖B.indicator (fun _ => (1 : ℝ)) (y r)‖ ≤ 1 := by
+    intro y
+    have h0 : 0 ≤ B.indicator (fun _ => (1 : ℝ)) (y r) :=
+      Set.indicator_apply_nonneg fun _ => zero_le_one
+    rw [Real.norm_eq_abs, abs_of_nonneg h0]
+    exact Set.indicator_apply_le' (fun _ => le_rfl) fun _ => zero_le_one
+  exact tendsto_integral_abs_birkhoffAverage_sub_condExp (shift α) hρ.measurePreserving_shift
+    (MemLp.of_bound hmeas.aestronglyMeasurable 1 (Filter.Eventually.of_forall hbdd))
 
 end Probability
 
