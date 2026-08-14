@@ -177,6 +177,48 @@ theorem ContractableLaw.condExp_indicator_coord_ae_eq_invariantConditional
       (measurable_const.indicator hB)).symm
   · exact stronglyMeasurable_condExp.aestronglyMeasurable.congr hwit.symm
 
+/-- **A weighted block integral does not depend on the displacement.** For a weight `g` reading
+only the first `r` coordinates, the integral over an invariant event of `g` times the indicator at
+coordinate `r + m` is the same for every `m` — in particular equal to its value at `m = 0`.
+
+This is the `m`-independence in the form the induction consumes: the left-hand side may therefore
+be replaced by an average over `m < n` at no cost, and that average is a Birkhoff average. -/
+theorem ContractableLaw.setIntegral_prefix_mul_indicator_displaced_eq
+    {ρ : Measure (ℕ → α)} (hρ : ContractableLaw ρ) {r : ℕ} {g : (Fin r → α) → ℝ}
+    (hg : Measurable g) {B : Set α} (hB : MeasurableSet B)
+    {A : Set (ℕ → α)} (hA : MeasurableSet[MeasurableSpace.invariants (shift α)] A) (m : ℕ) :
+    ∫ x in A, g (prefixProj α r x) * B.indicator (fun _ => (1 : ℝ)) (x (r + m)) ∂ρ
+      = ∫ x in A, g (prefixProj α r x) * B.indicator (fun _ => (1 : ℝ)) (x r) ∂ρ := by
+  classical
+  -- The combined observable on a block of length `r + 1`.
+  set G : (Fin (r + 1) → α) → ℝ := fun y =>
+    g (fun j : Fin r => y j.castSucc) * B.indicator (fun _ => (1 : ℝ)) (y (Fin.last r)) with hG
+  have hG_meas : Measurable G := by
+    refine Measurable.mul ?_ ?_
+    · exact hg.comp (measurable_pi_lambda _ fun j => measurable_pi_apply j.castSucc)
+    · exact (measurable_const.indicator hB).comp (measurable_pi_apply (Fin.last r))
+  have hsel : ∀ (d : ℕ), Measurable
+      (fun x : ℕ → α => fun i : Fin (r + 1) =>
+        x ((Fin.snoc (fun j : Fin r => (j : ℕ)) (r + d) : Fin (r + 1) → ℕ) i)) :=
+    fun d => measurable_pi_lambda _ fun i => measurable_pi_apply _
+  -- Reading the combined observable along the displaced selection is the integrand.
+  have hcomp : ∀ (d : ℕ) (x : ℕ → α),
+      G (fun i : Fin (r + 1) =>
+          x ((Fin.snoc (fun j : Fin r => (j : ℕ)) (r + d) : Fin (r + 1) → ℕ) i))
+        = g (prefixProj α r x) * B.indicator (fun _ => (1 : ℝ)) (x (r + d)) := by
+    intro d x
+    simp only [hG, Fin.snoc_castSucc, Fin.snoc_last]
+    rfl
+  -- Every displacement pushes the restricted law to the same measure.
+  have key : ∀ d : ℕ, ∫ x in A, g (prefixProj α r x)
+      * B.indicator (fun _ => (1 : ℝ)) (x (r + d)) ∂ρ
+      = ∫ y, G y ∂((ρ.restrict A).map (prefixProj α (r + 1))) := by
+    intro d
+    rw [← hρ.map_restrict_snoc_prefix_eq_prefixProj r d hA,
+      integral_map (hsel d).aemeasurable hG_meas.aestronglyMeasurable]
+    exact integral_congr_ae (Filter.Eventually.of_forall fun x => (hcomp d x).symm)
+  rw [key m, ← key 0, Nat.add_zero]
+
 end Probability
 
 end TauCeti
