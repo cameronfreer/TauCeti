@@ -138,6 +138,45 @@ theorem ContractableLaw.tendsto_integral_abs_birkhoffAverage_indicator_coord
   exact tendsto_integral_abs_birkhoffAverage_sub_condExp (shift α) hρ.measurePreserving_shift
     (MemLp.of_bound hmeas.aestronglyMeasurable 1 (Filter.Eventually.of_forall hbdd))
 
+/-- **The invariant conditional law computes every coordinate, not just the first.** Combining the
+witness's characteristic property at coordinate `0` with the transport fact that all coordinates
+agree over invariant events. This is what lets the Birkhoff limit at coordinate `r` be named as the
+witness. -/
+theorem ContractableLaw.condExp_indicator_coord_ae_eq_invariantConditional
+    [StandardBorelSpace α] [Nonempty α] {ρ : Measure (ℕ → α)} [IsProbabilityMeasure ρ]
+    (hρ : ContractableLaw ρ) {B : Set α} (hB : MeasurableSet B) (r : ℕ) :
+    ρ[fun y : ℕ → α => B.indicator (fun _ => (1 : ℝ)) (y r) |
+        MeasurableSpace.invariants (shift α)]
+      =ᵐ[ρ] fun x => ((invariantConditionalProbabilityMeasure ρ x : Measure α)).real B := by
+  classical
+  have hle : MeasurableSpace.invariants (shift α) ≤ (inferInstance : MeasurableSpace (ℕ → α)) :=
+    MeasurableSpace.invariants_le _
+  have hmeas : ∀ s : ℕ, Measurable fun y : ℕ → α => B.indicator (fun _ => (1 : ℝ)) (y s) :=
+    fun s => (measurable_const.indicator hB).comp (measurable_pi_apply s)
+  have hint : ∀ s : ℕ, Integrable (fun y : ℕ → α => B.indicator (fun _ => (1 : ℝ)) (y s)) ρ := by
+    intro s
+    refine ⟨(hmeas s).aestronglyMeasurable, .of_bounded (C := 1) (Filter.Eventually.of_forall ?_)⟩
+    intro y
+    have h0 : 0 ≤ B.indicator (fun _ => (1 : ℝ)) (y s) :=
+      Set.indicator_apply_nonneg fun _ => zero_le_one
+    rw [Real.norm_eq_abs, abs_of_nonneg h0]
+    exact Set.indicator_apply_le' (fun _ => le_rfl) fun _ => zero_le_one
+  -- The witness is the conditional expectation at coordinate `0`.
+  have hwit := invariantConditionalProbabilityMeasure_ae_eq_condExp (ρ := ρ) hB
+  refine Filter.EventuallyEq.symm (ae_eq_condExp_of_forall_setIntegral_eq hle (hint r)
+    (fun s _ _ => (integrable_condExp.congr hwit.symm).integrableOn) (fun s hs _ => ?_) ?_)
+  · -- Test against an invariant event: coordinate `r` agrees with coordinate `0`.
+    have h0 : ∫ x in s, ((invariantConditionalProbabilityMeasure ρ x : Measure α)).real B ∂ρ
+        = ∫ x in s, B.indicator (fun _ => (1 : ℝ)) (x 0) ∂ρ := by
+      have hint0 : Integrable ((B.indicator fun _ => (1 : ℝ)) ∘ fun x : ℕ → α => x 0) ρ := hint 0
+      rw [setIntegral_congr_ae (hle _ hs) (hwit.mono fun x hx _ => hx),
+        setIntegral_condExp hle hint0 hs]
+      rfl
+    rw [h0]
+    exact (hρ.setIntegral_comp_coord_eq_zero_of_measurableSet_invariants r hs
+      (measurable_const.indicator hB)).symm
+  · exact stronglyMeasurable_condExp.aestronglyMeasurable.congr hwit.symm
+
 end Probability
 
 end TauCeti
