@@ -70,7 +70,7 @@ theorem measurable_multinomialMeasure :
   have hswap : Measurable fun q : StdSimplex ℝ≥0 ι × ℕ => multinomialMeasure q.2 q.1 := by
     rw [h]
     exact measurable_from_prod_countable_left fun n =>
-      (measurable_sum_multinomialWeight_smul_dirac n).comp StdSimplex.measurable_weights
+      (measurable_sum_multinomialWeight_smul_dirac n).comp StdSimplex.measurable_toFun_comp_weights
   exact hswap.comp measurable_swap
 
 end Probability
